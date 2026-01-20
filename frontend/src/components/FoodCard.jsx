@@ -84,6 +84,11 @@ const FoodCard = ({ data }) => {
             {data.rating?.count || 0}
           </span>
         </div>
+        
+        {/* Description for User */}
+        {data.description && (
+            <p className="text-xs text-gray-500 mt-2 line-clamp-1">{data.description}</p>
+        )}
       </div>
 
       <div className="flex items-center justify-between mt-auto p-3 ">
