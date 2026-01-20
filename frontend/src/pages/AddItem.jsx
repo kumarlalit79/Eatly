@@ -20,6 +20,9 @@ const AddItem = () => {
   const [backendImage, setBackendImage] = useState(null);
   const [category, setCategory] = useState("");
   const [foodType, setFoodType] = useState("veg");
+  const [description, setDescription] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState(""); // New error state
 
   const [loading, setSetloading] = useState(false);
 
@@ -47,6 +50,28 @@ const AddItem = () => {
     setFrontendImage(URL.createObjectURL(file));
   };
 
+  const handleGenerateDescription = async () => {
+    setAiError(""); // Reset error
+    if (!name || !category) {
+      setAiError("Please enter Item Name and Select Category first!");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const result = await axios.post(
+        `${serverUrl}/api/ai/generate-description`,
+        { itemName: name, category },
+        { withCredentials: true }
+      );
+      setDescription(result.data.description);
+      setGenerating(false);
+    } catch (error) {
+      console.log("AI error", error);
+      setGenerating(false);
+      setAiError(error.response?.data?.details || "Failed to generate description. Try again.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSetloading(true)
@@ -57,6 +82,7 @@ const AddItem = () => {
       formData.append("category", category);
       formData.append("foodType", foodType);
       formData.append("price", price);
+      formData.append("description", description);
 
       if (backendImage) {
         formData.append("image", backendImage);
@@ -129,6 +155,32 @@ const AddItem = () => {
                 />
               </div>
             )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <div className="relative">
+              <textarea
+                placeholder="Enter or Generate Description"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[100px]"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              <button
+                type="button"
+                className="absolute right-2 bottom-2 bg-gradient-to-r from-[#ff4d2d] to-orange-600 text-white text-xs px-3 py-1.5 rounded-md shadow-sm hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-1"
+                onClick={handleGenerateDescription}
+                disabled={generating}
+              >
+                {generating ? (
+                  <ClipLoader size={12} color="white" />
+                ) : (
+                  <>✨ Generate with AI</>
+                )}
+              </button>
+            </div>
+            {aiError && <p className="text-red-500 text-sm mt-1">{aiError}</p>} 
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

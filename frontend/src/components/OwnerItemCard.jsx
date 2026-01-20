@@ -41,6 +41,11 @@ const OwnerItemCard = ({ data }) => {
             <span className="font-medium text-gray-700">Food Type:</span>{" "}
             {data.foodType}
           </p>
+          {data.description && (
+            <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+              {data.description}
+            </p>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <div className="font-medium text-[#ff4d2d]">₹{data.price}</div>

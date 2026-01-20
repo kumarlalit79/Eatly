@@ -12,6 +12,7 @@ import orderRouter from "./routes/order.routes.js";
 import http from "http";
 import { Server } from "socket.io";
 import { socketHandler } from "./socket.js";
+import aiRouter from "./routes/ai.routes.js";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/ai", aiRouter);
 
 socketHandler(io);
 
