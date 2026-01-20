@@ -1,6 +1,7 @@
 import Item from "../models/item.model.js";
 import Shop from "../models/shop.model.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
+import { expandSearchQuery } from "./ai.controller.js";
 
 export const addItems = async (req, res) => {
   try {
@@ -186,12 +187,28 @@ export const searchItems = async (req, res) => {
     }
 
     const shopIds = shops.map((s) => s._id);
+
+    // AI Semantic Search Expansion
+    let searchTerms = [query];
+    try {
+      searchTerms = await expandSearchQuery(query);
+      console.log("Expanded Search Terms:", searchTerms);
+    } catch (err) {
+      console.log("AI search expansion failed, falling back to basic search");
+    }
+
+    // transform terms into regex array for OR query
+    const regexQueries = searchTerms.map((term) => ({
+      $or: [
+        { name: { $regex: term, $options: "i" } },
+        { category: { $regex: term, $options: "i" } },
+        { description: { $regex: term, $options: "i" } },
+      ],
+    }));
+
     const items = await Item.find({
       shop: { $in: shopIds },
-      $or: [
-        { name: { $regex: query, $options: "i" } },
-        { category: { $regex: query, $options: "i" } },
-      ],
+      $or: regexQueries,
     }).populate("shop", "name image");
 
     return res.status(200).json(items);
@@ -228,15 +245,14 @@ export const rating = async (req, res) => {
     const newCount = item.rating.count + 1;
     const newAverage =
       (item.rating.average * item.rating.count + rating) / newCount;
-    
-    item.rating.count = newCount
-    item.rating.average = newAverage
-    await item.save()
+
+    item.rating.count = newCount;
+    item.rating.average = newAverage;
+    await item.save();
 
     return res.status(200).json({
-      rating: item.rating
-    })
-
+      rating: item.rating,
+    });
   } catch (error) {
     return res.status(500).json({
       message: `Ratings error ${error}`,
