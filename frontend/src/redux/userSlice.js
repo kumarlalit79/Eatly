@@ -94,23 +94,55 @@ const userSlice = createSlice({
         }
       }
     },
-    updateRealTimeOrderStatus: (state, action) => {
-      const { orderId, shopId, status } = action.payload;
+    // updateRealTimeOrderStatus: (state, action) => {
+    //   const { orderId, shopId, status } = action.payload;
 
-      const order = state.myOrders.find((o) => o._id === orderId);
-      if (order) {
-        const shopOrder = order.shopOrders.find((so) => so.shop._id == shopId);
+    //   const order = state.myOrders.find((o) => o._id === orderId);
+    //   if (order) {
+    //     const shopOrder = order.shopOrders.find((so) => so.shop._id == shopId);
+    //     if (shopOrder) {
+    //       shopOrder.status = status;
+    //     }
+    //   }
+    // },
+    
+    updateRealTimeOrderStatus: (state, action) => {
+      const { orderId, shopId, status, assignedDeliveryBoy } = action.payload;
+
+      const order = state.myOrders.find(
+        (o) => o._id.toString() === orderId.toString(),
+      );
+
+      if (!order) return;
+
+      // 🔥 CASE 1: shopOrders is ARRAY (USER)
+      if (Array.isArray(order.shopOrders)) {
+        const shopOrder = order.shopOrders.find(
+          (so) => so.shop._id.toString() === shopId.toString(),
+        );
+
         if (shopOrder) {
-          shopOrder.status = status;
+          if(status) shopOrder.status = status;
+          if(assignedDeliveryBoy) shopOrder.assignedDeliveryBoy = assignedDeliveryBoy;
         }
+      }
+
+      // 🔥 CASE 2: shopOrders is OBJECT (OWNER)
+      else if (
+        order.shopOrders &&
+        order.shopOrders.shop &&
+        order.shopOrders.shop._id.toString() === shopId.toString()
+      ) {
+         if(status) order.shopOrders.status = status;
+         if(assignedDeliveryBoy) order.shopOrders.assignedDeliveryBoy = assignedDeliveryBoy; 
       }
     },
     setSearchItems: (state, action) => {
       state.searchItems = action.payload;
     },
-    setSocket: (state, action) => {
-      state.socket = action.payload;
-    },
+    // setSocket: (state, action) => {
+    //   state.socket = action.payload;
+    // },
   },
 });
 
@@ -129,6 +161,6 @@ export const {
   updateOrderStatus,
   setSearchItems,
   setSocket,
-  updateRealTimeOrderStatus
+  updateRealTimeOrderStatus,
 } = userSlice.actions;
 export default userSlice.reducer;

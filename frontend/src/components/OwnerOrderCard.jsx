@@ -19,11 +19,12 @@ const OwnerOrderCard = ({ data }) => {
         { withCredentials: true }
       );
       // dispatch(updateOrderStatus({orderId, shopId, status}))
-      dispatch(updateOrderStatus({
-        orderId:data._id, 
-        shopId : data.shopOrders.shop._id, 
-        shopOrder : result.data.shopOrder
-      }))
+      
+      // dispatch(updateOrderStatus({
+      //   orderId:data._id, 
+      //   shopId : data.shopOrders.shop._id, 
+      //   shopOrder : result.data.shopOrder
+      // }))
       setAvailableBoys(result.data.availableBoys)
       console.log("owner order card=",result.data);
     } catch (error) {
@@ -87,14 +88,31 @@ const OwnerOrderCard = ({ data }) => {
       </div>
 
       {data.shopOrders.status=="out of delivery" && <div className="mt-3 p-2 border rounded-lg text-sm bg-orange-50">
-        {data.shopOrders.assignedDeliveryBoy?<p>Assigned Delivery Boy</p>:<p>Available Delivery Boys</p>}
-        {availableBoys.length>0 ? (
-          availableBoys.map((b,index) => (
-            <div className="text-gray-300">{b.fullName}-{b.mobile}</div>
-          ))
-        ):data.shopOrders.assignedDeliveryBoy?<div>{data.shopOrders.assignedDeliveryBoy.fullName}-{data.shopOrders.assignedDeliveryBoy.mobile} </div>:<div>
-          Waiting for delivery boy to accept
-        </div>}
+        {data.shopOrders.assignedDeliveryBoy ? (
+          <p>Assigned Delivery Boy</p>
+        ) : (
+          <p>Available Delivery Boys</p>
+        )}
+        {availableBoys.length > 0
+          ? availableBoys.map((b, index) => (
+              <div className="text-gray-300" key={index}>
+                {b.fullName}-{b.mobile}
+              </div>
+            ))
+          : data.shopOrders.assignment && data.shopOrders.assignment.brodcastedTo
+            ? data.shopOrders.assignment.brodcastedTo.map((b, index) => (
+                <div className="text-gray-300" key={index}>
+                  {b.fullName}-{b.mobile}
+                </div>
+              ))
+            : data.shopOrders.assignedDeliveryBoy ? (
+          <div>
+            {data.shopOrders.assignedDeliveryBoy.fullName}-
+            {data.shopOrders.assignedDeliveryBoy.mobile}{" "}
+          </div>
+        ) : (
+          <div>Waiting for delivery boy to accept</div>
+        )}
       </div>
       }
 

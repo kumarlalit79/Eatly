@@ -27,7 +27,7 @@ export const socketHandler = (io) => {
 
         if(user){
           io.emit('updateDeliveryLocation',{
-            deliveryBoy:userId,
+            deliveryBoyId:userId,
             latitude,
             longitude
           })

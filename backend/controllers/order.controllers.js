@@ -210,7 +210,14 @@ export const getMyOrders = async (req, res) => {
         .populate("shopOrders.shop", "name")
         .populate("user")
         .populate("shopOrders.shopOrderItems.item", "name image price")
-        .populate("shopOrders.assignedDeliveryBoy", "fullName mobile");
+        .populate("shopOrders.assignedDeliveryBoy", "fullName mobile")
+        .populate({
+          path: "shopOrders.assignment",
+          populate: {
+            path: "brodcastedTo",
+            select: "fullName mobile",
+          },
+        });
 
       const filteredOrders = orders.map((order) => ({
         _id: order._id,
@@ -256,10 +263,11 @@ export const updateOrderStatus = async (req, res) => {
               type: "Point",
               coordinates: [Number(longitude), Number(latitude)],
             },
-            $maxDistance: 5000,
+            $maxDistance: 10000, 
           },
         },
       });
+      
       const nearByIds = nearByDeliveryBoys.map((b) => b._id);
       const busyIds = await DeliveryAssignment.find({
         assignedTo: { $in: nearByIds },
@@ -274,11 +282,13 @@ export const updateOrderStatus = async (req, res) => {
       const candidates = availableBoys.map((b) => b._id);
 
       if (candidates.length == 0) {
-        await order.save();
-        return res.json({
-          message:
-            "Order status updated but there is no available delivery boys",
-        });
+        // DO NOT RETURN HERE, allowed to proceed to save and emit
+        // await order.save();
+        // return res.json({
+        //   message:
+        //     "Order status updated but there is no available delivery boys",
+        // });
+        console.log("No delivery boys available");
       }
 
       const deliveryAssignment = await DeliveryAssignment.create({
@@ -344,21 +354,65 @@ export const updateOrderStatus = async (req, res) => {
       ? updatedShopOrder.assignment._id
       : null;
 
+    // const io = req.app.get("io");
+    // if (io) {
+    //   const userSocketId = order.user.socketId;
+    //   if (userSocketId) {
+    //     io.to(userSocketId).emit("update-status", {
+    //       orderId: order._id,
+    //       // shopId: updatedShopOrder.shop._id,
+    //       shopId: updatedShopOrder.shop.toString(),
+    //       // status:updateOrderStatus.status,
+    //       status: status,
+    //       userId: order.user._id,
+    //       assignedDeliveryBoy: assignedBoy,
+    //     });
+    //   }
+    // }
+
+    // const io = req.app.get("io");
+
+    // USER ko emit
+    // if (order.user?.socketId) {
+    //   io.to(order.user.socketId).emit("update-status", {
+    //     orderId: order._id,
+    //     shopId: updatedShopOrder.shop.toString(),
+    //     status,
+    //   });
+    // }
+
+    // // OWNER ko emit
+    // if (updatedShopOrder.owner?.socketId) {
+    //   io.to(updatedShopOrder.owner.socketId).emit("update-status", {
+    //     orderId: order._id,
+    //     shopId: updatedShopOrder.shop.toString(),
+    //     status,
+    //   });
+    // }
+
+    await order.populate("shopOrders.owner", "socketId");
+    await order.populate("user", "socketId");
+
     const io = req.app.get("io");
-    if (io) {
-      const userSocketId = order.user.socketId;
-      if (userSocketId) {
-        io.to(userSocketId).emit("update-status", {
-          orderId: order._id,
-          // shopId: updatedShopOrder.shop._id,
-          shopId: updatedShopOrder.shop.toString(),
-          // status:updateOrderStatus.status,
-          status: status,
-          userId: order.user._id,
-          assignedDeliveryBoy: assignedBoy,
-        });
+
+if (io) {
+      const payload = {
+        orderId: order._id,
+        shopId: shopId, // Use the string ID from params directly
+        status,
+      };
+
+      // USER
+      if (order.user?.socketId) {
+        io.to(order.user.socketId).emit("update-status", payload);
+      }
+
+      // OWNER
+      if (updatedShopOrder.owner?.socketId) {
+        io.to(updatedShopOrder.owner.socketId).emit("update-status", payload);
       }
     }
+
 
     return res.status(200).json({
       shopOrder: updatedShopOrder,
@@ -447,6 +501,31 @@ export const acceptOrder = async (req, res) => {
     shopOrder.assignedDeliveryBoy = req.userId;
 
     await order.save();
+    
+    // Notify Owner and User
+    await order.populate("shopOrders.owner", "socketId");
+    await order.populate("user", "socketId");
+    await order.populate("shopOrders.assignedDeliveryBoy", "fullName mobile");
+
+    const io = req.app.get("io");
+    if(io){
+        const payload = {
+            orderId: order._id,
+            shopId: shopOrder.shop.toString(),
+            status: "assigned", // or keep previous status but add assignment info
+            assignedDeliveryBoy: shopOrder.assignedDeliveryBoy
+        }
+
+        // To Owner
+        if(order.shopOrders.find(so => so._id.equals(shopOrder._id))?.owner?.socketId){
+             io.to(order.shopOrders.find(so => so._id.equals(shopOrder._id)).owner.socketId).emit('update-status', payload)
+        }
+
+        // To User (optional, if they need to see delivery boy name)
+        if(order.user?.socketId){
+            io.to(order.user.socketId).emit('update-status', payload)
+        }
+    }
 
     return res.status(200).json({
       message: "Order accepted",
@@ -616,6 +695,28 @@ export const verifyDeliveryOtp = async (req, res) => {
       order: order._id,
       assignedTo: shopOrder.assignedDeliveryBoy,
     });
+
+    // Notify User and Owner about delivery
+    const io = req.app.get("io");
+    if(io){
+        const payload = {
+            orderId: order._id,
+            shopId: shopOrder.shop.toString(),
+            status: "delivered",
+        }
+
+        // To User
+        if(order.user?.socketId){
+             io.to(order.user.socketId).emit('update-status', payload)
+        }
+        
+        // To Owner
+        // Need to populate owner to get socketId if not already populated
+        await order.populate("shopOrders.owner", "socketId");
+        if(order.shopOrders.find(so => so._id.equals(shopOrder._id))?.owner?.socketId){
+             io.to(order.shopOrders.find(so => so._id.equals(shopOrder._id)).owner.socketId).emit('update-status', payload)
+        }
+    }
 
     return res.status(200).json({
       message: "Order Delivered Successfully",

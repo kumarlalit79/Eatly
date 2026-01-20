@@ -170,12 +170,14 @@ const Nav = () => {
               </div>
             )}
 
-            <button
-              className="hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium cursor-pointer"
-              onClick={() => navigate("/my-orders")}
-            >
-              My Orders
-            </button>
+            {userData.role === "user" && (
+              <button
+                className="hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium cursor-pointer"
+                onClick={() => navigate("/my-orders")}
+              >
+                My Orders
+              </button>
+            )}
           </>
         )}
 

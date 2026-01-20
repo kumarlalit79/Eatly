@@ -16,13 +16,22 @@ import {
 } from "recharts";
 import { ClipLoader } from "react-spinners";
 
+import { socket } from "../socket";
+
 const DeliveryBoy = () => {
-  const { userData, socket } = useSelector((state) => state.user);
+  const { userData } = useSelector((state) => state.user); // Removed socket from here
   const [currentOrder, setCurrentOrder] = useState();
   const [availableAssignments, setAvailableAssignments] = useState(null);
   const [showOtpBox, setShowOtpBox] = useState(false);
   const [otp, setOtp] = useState("");
-  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState(null);
+  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState(
+    userData?.location?.coordinates
+      ? {
+          lat: userData.location.coordinates[1],
+          lon: userData.location.coordinates[0],
+        }
+      : null,
+  );
   const [todayDeliveries, setTodayDeliveries] = useState([]);
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -88,7 +97,12 @@ const DeliveryBoy = () => {
       console.log("getCurrentOrder", result.data);
       setCurrentOrder(result.data);
     } catch (error) {
-      console.log(error);
+      if (error.response && error.response.status === 400) {
+        console.log("No current order assigned.");
+        setCurrentOrder(null);
+      } else {
+        console.log(error);
+      }
     }
   };
 
@@ -169,8 +183,8 @@ const DeliveryBoy = () => {
 
   useEffect(() => {
     socket?.on("newAssignment", (data) => {
-      if (data.sendTo == userData._id) {
-        setAvailableAssignments([...prev, data]);
+      if (data.sentTo == userData._id) {
+        setAvailableAssignments((prev) => [...prev, data]);
       }
     });
     return () => {
