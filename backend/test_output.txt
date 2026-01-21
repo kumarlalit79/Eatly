@@ -1,0 +1,3 @@
+Using API Key: Loaded
+Testing gemini-3-flash-preview...
+Success! Response: Hello! How can I help you today?
