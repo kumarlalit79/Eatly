@@ -27,6 +27,7 @@ import { setSocket } from "./redux/userSlice";
 import { socket } from "./socket";
 
 import Chatbot from "./components/Chatbot";
+import SurpriseMe from "./components/SurpriseMe";
 
 export const serverUrl = "http://localhost:3000";
 
@@ -132,7 +133,12 @@ const App = () => {
           element={userData ? <Shop /> : <Navigate to={"/signin"} />}
         />
       </Routes>
-      <Chatbot />
+      {userData && userData.role === "user" && (
+        <>
+          <Chatbot />
+          <SurpriseMe />
+        </>
+      )}
     </>
   );
 };
