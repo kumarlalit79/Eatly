@@ -157,7 +157,7 @@ const UserDashboard = () => {
         <div className="w-full relative">
           {showLeftCateButton && (
             <button
-              className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#ff4d2d] z-10"
+              className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#ff4d2d] z-10 cursor-pointer"
               onClick={() => scrollHandler(cateScrollRef, "left")}
             >
               <FaCircleChevronLeft />
@@ -165,7 +165,7 @@ const UserDashboard = () => {
           )}
 
           <div
-            className="w-full flex overflow-x-auto gap-4 pb-2"
+            className="w-full flex overflow-x-auto gap-4 pb-2 cursor-pointer"
             ref={cateScrollRef}
           >
             {categories?.map((cate, index) => (
@@ -180,7 +180,7 @@ const UserDashboard = () => {
 
           {showRightCateButton && (
             <button
-              className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#ff4d2d] z-10"
+              className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#ff4d2d] z-10 cursor-pointer"
               onClick={() => scrollHandler(cateScrollRef, "right")}
             >
               <FaCircleChevronRight />
